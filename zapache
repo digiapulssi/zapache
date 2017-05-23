@@ -12,39 +12,42 @@
 #
 # Version: 1.5
 #
- 
+
 zapachever="1.5"
 rval=0
 value=""
 cache_seconds="60"
+HEADER_PARAM=""
+curl="`which curl`"
+wget="`which wget`"
 [ "$TMPDIR" ] || TMPDIR=/tmp
- 
+
 function usage()
 {
 	echo "zapache version: $zapachever"
 	echo "usage:"
-	echo "  $0 [<url>] TotalAccesses                 - Check total accesses."
-	echo "  $0 [<url>] TotalKBytes                   - Check total KBytes."
-	echo "  $0 [<url>] CPULoad                       - Check CPU load."
-	echo "  $0 [<url>] Uptime                        - Check uptime."
-	echo "  $0 [<url>] ReqPerSec                     - Check requests per second."
-	echo "  $0 [<url>] BytesPerSec                   - Check Bytes per second."
-	echo "  $0 [<url>] BytesPerReq                   - Check Bytes per request."
-	echo "  $0 [<url>] BusyWorkers                   - Check busy workers."
-	echo "  $0 [<url>] IdleWorkers                   - Check idle workers."
-	echo "  $0 [<url>] version                       - Version of this script."
-	echo "  $0 [<url>] ping                          - Check if Apache is up."
-	echo "  $0 [<url>] WaitingForConnection          - Check Waiting for Connection processess."
-	echo "  $0 [<url>] StartingUp                    - Check Starting Up processess."
-	echo "  $0 [<url>] ReadingRequest                - Check Reading Request processess."
-	echo "  $0 [<url>] SendingReply                  - Check Sending Reply processess."
-	echo "  $0 [<url>] KeepAlive                     - Check KeepAlive Processess."
-	echo "  $0 [<url>] DNSLookup                     - Check DNSLookup Processess."
-	echo "  $0 [<url>] ClosingConnection             - Check Closing Connection Processess."
-	echo "  $0 [<url>] Logging                       - Check Logging Processess."
-	echo "  $0 [<url>] GracefullyFinishing           - Check Gracefully Finishing Processess."
-	echo "  $0 [<url>] IdleCleanupOfWorker           - Check Idle Cleanup of Worker Processess."
-	echo "  $0 [<url>] OpenSlotWithNoCurrentProcess  - Check Open Slots with No Current Process."
+	echo "  $0 [<url>] [<header>] TotalAccesses                 - Check total accesses."
+	echo "  $0 [<url>] [<header>] TotalKBytes                   - Check total KBytes."
+	echo "  $0 [<url>] [<header>] CPULoad                       - Check CPU load."
+	echo "  $0 [<url>] [<header>] Uptime                        - Check uptime."
+	echo "  $0 [<url>] [<header>] ReqPerSec                     - Check requests per second."
+	echo "  $0 [<url>] [<header>] BytesPerSec                   - Check Bytes per second."
+	echo "  $0 [<url>] [<header>] BytesPerReq                   - Check Bytes per request."
+	echo "  $0 [<url>] [<header>] BusyWorkers                   - Check busy workers."
+	echo "  $0 [<url>] [<header>] IdleWorkers                   - Check idle workers."
+	echo "  $0 [<url>] [<header>] version                       - Version of this script."
+	echo "  $0 [<url>] [<header>] ping                          - Check if Apache is up."
+	echo "  $0 [<url>] [<header>] WaitingForConnection          - Check Waiting for Connection processess."
+	echo "  $0 [<url>] [<header>] StartingUp                    - Check Starting Up processess."
+	echo "  $0 [<url>] [<header>] ReadingRequest                - Check Reading Request processess."
+	echo "  $0 [<url>] [<header>] SendingReply                  - Check Sending Reply processess."
+	echo "  $0 [<url>] [<header>] KeepAlive                     - Check KeepAlive Processess."
+	echo "  $0 [<url>] [<header>] DNSLookup                     - Check DNSLookup Processess."
+	echo "  $0 [<url>] [<header>] ClosingConnection             - Check Closing Connection Processess."
+	echo "  $0 [<url>] [<header>] Logging                       - Check Logging Processess."
+	echo "  $0 [<url>] [<header>] GracefullyFinishing           - Check Gracefully Finishing Processess."
+	echo "  $0 [<url>] [<header>] IdleCleanupOfWorker           - Check Idle Cleanup of Worker Processess."
+	echo "  $0 [<url>] [<header>] OpenSlotWithNoCurrentProcess  - Check Open Slots with No Current Process."
 }
 
 ########
@@ -63,6 +66,19 @@ elif [[ $# == 2 ]];then
 		*) STATUS_URL="http://$STATUS_URL/server-status?auto";;
 	esac
 	CASE_VALUE="$2"
+elif [[ $# == 3 ]];then
+  #External Script Mode
+  STATUS_URL="$1"
+  case "$STATUS_URL" in
+    http://*|https://*) ;;
+    *) STATUS_URL="http://$STATUS_URL/server-status?auto";;
+  esac
+  if [ "$curl" ]; then
+		HEADER_PARAM="-H \"$2\""
+	else
+    HEADER_PARAM="--header \"$2\""
+  fi
+  CASE_VALUE="$3"
 else
 	#No Parameter
 	usage
@@ -85,13 +101,11 @@ cache_timestamp_check="$TMPDIR/$cache_prefix.ts"
 touch -d "@$((`date +%s` - ($cache_seconds - 1)))" "$cache_timestamp_check"
 
 if [ "$cache" -ot "$cache_timestamp_check" ]; then
-	curl="`which curl`"
 	if [ "$curl" ]; then
-		fetch_url() { $curl --insecure --silent --location -H "Cache-Control: no-cache" "$@"; }
+		fetch_url() { $curl --insecure --silent --location $HEADER_PARAM -H "Cache-Control: no-cache" "$@"; }
 	else
-		wget="`which wget`"
 		if [ "$wget" ]; then
-			fetch_url() { $wget --no-check-certificate --quiet --header "Cache-Control: no-cache" -O - "$@"; }
+			fetch_url() { $wget --no-check-certificate --quiet $HEADER_PARAM --header "Cache-Control: no-cache" -O - "$@"; }
 		else
 			echo "ZBX_NOTSUPPORTED"
 			exit 1
@@ -120,7 +134,7 @@ if ! [ -s "$cache" ]; then
 	echo "ZBX_NOTSUPPORTED"
 	exit 1
 fi
- 
+
 case "$CASE_VALUE" in
 'TotalAccesses')
 	value="`awk '/^Total Accesses:/ {print $3}' < \"$cache\"`"
@@ -198,13 +212,13 @@ if [ "$rval" -eq 0 -a -z "$value" ]; then
             ;;
     esac
 fi
- 
+
 if [ "$rval" -ne 0 ]; then
 	echo "ZBX_NOTSUPPORTED"
 fi
- 
+
 echo "$value"
 exit $rval
- 
+
 #
 # end zapache
