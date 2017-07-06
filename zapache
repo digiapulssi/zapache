@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 #
 # Name: zapache
 #
@@ -9,8 +9,7 @@
 # Modified for using also as external script: Murat Koc, murat@profelis.com.tr
 # Modified for outputting usage or ZBX_NOTSUPPORTED: Alejandro Michavila
 # Modified to do cacheing for performance, dmitry.frolov@gmail.com
-#
-# Version: 1.5
+# Modified three-parameter version: Tommi Palomäki
 #
 
 zapachever="1.5"
@@ -18,8 +17,8 @@ rval=0
 value=""
 cache_seconds="60"
 HEADER_PARAM=""
-curl="`which curl`"
-wget="`which wget`"
+curl="`which curl 2>/dev/null`"
+wget="`which wget 2>/dev/null`"
 [ "$TMPDIR" ] || TMPDIR=/tmp
 
 function usage()
@@ -54,12 +53,16 @@ function usage()
 # Main #
 ########
 
-if [[ $# ==  1 ]];then
-	#Agent Mode
+if [ ${#1} -eq  0 ]; then
+	#No Parameter
+	usage
+	exit 0
+elif [ ${#2} -eq 0 ]; then
+	# One argument version
 	STATUS_URL="http://localhost/server-status?auto"
 	CASE_VALUE="$1"
-elif [[ $# == 2 ]];then
-	#External Script Mode
+elif [ ${#3} -eq 0 ]; then
+	# Two arguments, first is URL
 	STATUS_URL="$1"
 	case "$STATUS_URL" in
 		http://*|https://*) ;;
@@ -67,22 +70,14 @@ elif [[ $# == 2 ]];then
 	esac
 	CASE_VALUE="$2"
 elif [[ $# == 3 ]];then
-  #External Script Mode
+  # Three arguments, first is URL and seconds is http header
   STATUS_URL="$1"
   case "$STATUS_URL" in
     http://*|https://*) ;;
     *) STATUS_URL="http://$STATUS_URL/server-status?auto";;
   esac
-  if [ "$curl" ]; then
-		HEADER_PARAM="-H \"$2\""
-	else
-    HEADER_PARAM="--header \"$2\""
-  fi
+  HEADER_PARAM="--header \"$2\""
   CASE_VALUE="$3"
-else
-	#No Parameter
-	usage
-	exit 0
 fi
 
 case "$CASE_VALUE" in
@@ -115,6 +110,10 @@ if [ "$cache" -ot "$cache_timestamp_check" ]; then
 	fetch_url "$STATUS_URL" > "$cache"
 	rval=$?
 	if [ $rval != 0 ]; then
+		if [ "$CASE_VALUE" == "ping" ]; then
+			echo "0"
+			exit 0
+		fi
 		echo "ZBX_NOTSUPPORTED"
 		exit 1
 	fi
