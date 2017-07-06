@@ -16,9 +16,9 @@ zapachever="1.5"
 rval=0
 value=""
 cache_seconds="60"
-HEADER_PARAM=""
-curl="`which curl 2>/dev/null`"
-wget="`which wget 2>/dev/null`"
+EXTRA_PARAMS=()
+curl="`command -v curl`"
+wget="`command -v wget`"
 [ "$TMPDIR" ] || TMPDIR=/tmp
 
 function usage()
@@ -76,7 +76,7 @@ elif [[ $# == 3 ]];then
     http://*|https://*) ;;
     *) STATUS_URL="http://$STATUS_URL/server-status?auto";;
   esac
-  HEADER_PARAM="--header \"$2\""
+  EXTRA_PARAMS+=("--header" "$2")
   CASE_VALUE="$3"
 fi
 
@@ -97,10 +97,10 @@ touch -d "@$((`date +%s` - ($cache_seconds - 1)))" "$cache_timestamp_check"
 
 if [ "$cache" -ot "$cache_timestamp_check" ]; then
 	if [ "$curl" ]; then
-		fetch_url() { $curl --insecure --silent --location $HEADER_PARAM -H "Cache-Control: no-cache" "$@"; }
+		fetch_url() { $curl --insecure --silent --location "${EXTRA_PARAMS[@]}" -H "Cache-Control: no-cache" "$@"; }
 	else
 		if [ "$wget" ]; then
-			fetch_url() { $wget --no-check-certificate --quiet $HEADER_PARAM --header "Cache-Control: no-cache" -O - "$@"; }
+			fetch_url() { $wget --no-check-certificate --quiet "${EXTRA_PARAMS[@]}" --header "Cache-Control: no-cache" -O - "$@"; }
 		else
 			echo "ZBX_NOTSUPPORTED"
 			exit 1
