@@ -100,7 +100,7 @@ if [ "$cache" -ot "$cache_timestamp_check" ]; then
 		fetch_url() { $curl --insecure --silent --location "${EXTRA_PARAMS[@]}" -H "Cache-Control: no-cache" "$@"; }
 	else
 		if [ "$wget" ]; then
-			fetch_url() { $wget --no-check-certificate --quiet ${EXTRA_PARAMS[@]}" --header "Cache-Control: no-cache" -O - "$@"; }
+			fetch_url() { $wget --no-check-certificate --quiet "${EXTRA_PARAMS[@]}" --header "Cache-Control: no-cache" -O - "$@"; }
 		else
 			echo "ZBX_NOTSUPPORTED"
 			exit 1
