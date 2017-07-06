@@ -67,7 +67,9 @@ The item supports three usage formats:
 KPI is one of the metrics supported by the script, eg. CPULoad. See the full list of metrics in [zapache](zapache) function usage() section.
 
 In the first format, Apache server status URL is assumed to be http://localhost/server-status?auto.
+
 In the second format, URL is given as argument. URL can be either ADDRESS (eg. 127.0.0.1), ADDRESS:PORT (eg. 127.0.0.1:8080) or a full http url (eg. https://127.0.0.1:8443/server-status?auto).
+
 In the third format, an optional http header is given as argument (eg. Host: example.com).
 
 ### Screenshots
