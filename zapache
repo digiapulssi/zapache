@@ -17,8 +17,8 @@ rval=0
 value=""
 cache_seconds="60"
 EXTRA_PARAMS=()
-curl="`which curl 2>/dev/null`"
-wget="`which wget 2>/dev/null`"
+curl="`command -v curl`"
+wget="`command -v wget`"
 [ "$TMPDIR" ] || TMPDIR=/tmp
 
 function usage()
